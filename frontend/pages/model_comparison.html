@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Model Lab | ContextAI</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+
+        <a href="/" class="logo">
+            Context<span>AI</span>
+        </a>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/workspace">Workspace</a>
+            <a href="/comparison" class="active-link">Model Lab</a>
+            <a href="/explanation">How It Works</a>
+        </div>
+
+        <span class="model-indicator">LSTM V3</span>
+
+    </nav>
+
+
+    <main class="content-container">
+
+        <span class="eyebrow">EXPERIMENT ANALYSIS</span>
+
+        <h1>Model Laboratory</h1>
+
+        <p class="page-description">
+            Evaluate the performance of the LSTM experiments.
+            Transformer results will be added after its implementation
+            and evaluation on the same test dataset.
+        </p>
+
+
+        <section class="metrics-grid">
+
+            <div class="metric-card">
+                <span>TEST LOSS</span>
+                <h2>6.3537</h2>
+                <p>LSTM V3</p>
+            </div>
+
+            <div class="metric-card">
+                <span>TOP-1 ACCURACY</span>
+                <h2>19.55%</h2>
+                <p>LSTM V3</p>
+            </div>
+
+            <div class="metric-card">
+                <span>TOP-5 ACCURACY</span>
+                <h2>36.19%</h2>
+                <p>LSTM V3</p>
+            </div>
+
+            <div class="metric-card">
+                <span>TOP-10 ACCURACY</span>
+                <h2>42.68%</h2>
+                <p>LSTM V3</p>
+            </div>
+
+        </section>
+
+
+        <section class="table-section">
+
+            <h2>Experiment comparison</h2>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Test Loss</th>
+                            <th>Top-1</th>
+                            <th>Top-5</th>
+                            <th>Top-10</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <tr>
+                            <td>LSTM V1</td>
+                            <td>6.3380</td>
+                            <td>19.52%</td>
+                            <td>36.32%</td>
+                            <td>42.86%</td>
+                        </tr>
+
+                        <tr>
+                            <td>LSTM V2</td>
+                            <td>6.4173</td>
+                            <td>19.03%</td>
+                            <td>35.47%</td>
+                            <td>42.05%</td>
+                        </tr>
+
+                        <tr class="highlight-row">
+                            <td>LSTM V3</td>
+                            <td>6.3537</td>
+                            <td>19.55%</td>
+                            <td>36.19%</td>
+                            <td>42.68%</td>
+                        </tr>
+
+                        <tr>
+                            <td>Transformer</td>
+                            <td colspan="4">Not evaluated yet</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <p class="table-note">
+                All reported results are from the existing LSTM
+                experiments. The Transformer row will be populated
+                only after a comparable test evaluation.
+            </p>
+
+        </section>
+
+
+        <section class="info-section">
+
+            <h2>What these metrics mean</h2>
+
+            <div class="info-grid">
+
+                <div>
+                    <h3>Top-1 Accuracy</h3>
+                    <p>
+                        Percentage of test examples where the
+                        highest-probability predicted word exactly
+                        matches the actual next word.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Top-5 Accuracy</h3>
+                    <p>
+                        Percentage of test examples where the actual
+                        next word appears among the five highest-ranked
+                        predictions.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Top-10 Accuracy</h3>
+                    <p>
+                        Percentage of test examples where the actual
+                        next word appears among the ten highest-ranked
+                        predictions.
+                    </p>
+                </div>
+
+                <div>
+                    <h3>Test Loss</h3>
+                    <p>
+                        Measures how well the model assigns probability
+                        to the actual next word. Lower is generally better.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+        ContextAI · Model Laboratory
+    </footer>
+
+</body>
+</html>

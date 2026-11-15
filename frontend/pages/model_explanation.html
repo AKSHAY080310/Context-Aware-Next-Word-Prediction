@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>How It Works | ContextAI</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+
+        <a href="/" class="logo">
+            Context<span>AI</span>
+        </a>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/workspace">Workspace</a>
+            <a href="/comparison">Model Lab</a>
+            <a href="/explanation" class="active-link">How It Works</a>
+        </div>
+
+        <span class="model-indicator">LSTM V3</span>
+
+    </nav>
+
+
+    <main class="content-container">
+
+        <span class="eyebrow">UNDERSTANDING THE MODEL</span>
+
+        <h1>How does prediction work?</h1>
+
+        <p class="page-description">
+            A look at how written text is transformed into numerical
+            representations and processed by the LSTM model.
+        </p>
+
+
+        <section class="pipeline">
+
+            <div class="pipeline-step">
+                <span class="step-number">01</span>
+                <h2>Input text</h2>
+                <p>
+                    The user enters a sentence or phrase.
+                </p>
+
+                <div class="example-box">
+                    The future of artificial intelligence
+                </div>
+            </div>
+
+
+            <div class="pipeline-step">
+                <span class="step-number">02</span>
+                <h2>Tokenization</h2>
+                <p>
+                    NLTK word_tokenize divides the text into tokens.
+                </p>
+
+                <div class="example-box">
+                    ["The", "future", "of", "artificial", "intelligence"]
+                </div>
+            </div>
+
+
+            <div class="pipeline-step">
+                <span class="step-number">03</span>
+                <h2>Numerical encoding</h2>
+                <p>
+                    Every known token is converted into its vocabulary
+                    ID. Unknown words are assigned the UNK ID.
+                </p>
+
+                <div class="example-box">
+                    [ID, ID, ID, ID, ID]
+                </div>
+            </div>
+
+
+            <div class="pipeline-step">
+                <span class="step-number">04</span>
+                <h2>Context preparation</h2>
+                <p>
+                    The model accepts the most recent 10 token IDs.
+                    Shorter inputs are padded on the left.
+                </p>
+
+                <div class="example-box">
+                    Fixed input length: 10
+                </div>
+            </div>
+
+
+            <div class="pipeline-step">
+                <span class="step-number">05</span>
+                <h2>LSTM processing</h2>
+                <p>
+                    The embedding layer converts token IDs into
+                    vectors. The LSTM processes the sequence and
+                    learns relationships across the context.
+                </p>
+
+                <div class="example-box">
+                    Embedding → LSTM → Dropout → Dense
+                </div>
+            </div>
+
+
+            <div class="pipeline-step">
+                <span class="step-number">06</span>
+                <h2>Next-word prediction</h2>
+                <p>
+                    The final softmax layer produces probabilities
+                    over the vocabulary. We rank these probabilities
+                    to show the most likely next words.
+                </p>
+
+                <div class="example-box">
+                    Softmax → Top-K predictions
+                </div>
+            </div>
+
+        </section>
+
+
+        <section class="info-section">
+
+            <h2>Current model configuration</h2>
+
+            <div class="info-grid">
+
+                <div>
+                    <h3>Embedding dimension</h3>
+                    <p>128</p>
+                </div>
+
+                <div>
+                    <h3>LSTM units</h3>
+                    <p>128</p>
+                </div>
+
+                <div>
+                    <h3>Dense layer</h3>
+                    <p>128 units with ReLU activation</p>
+                </div>
+
+                <div>
+                    <h3>Output layer</h3>
+                    <p>Vocabulary-sized softmax layer</p>
+                </div>
+
+                <div>
+                    <h3>Loss function</h3>
+                    <p>Sparse categorical cross-entropy</p>
+                </div>
+
+                <div>
+                    <h3>Optimizer</h3>
+                    <p>Adam</p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+        ContextAI · Model Explanation
+    </footer>
+
+</body>
+</html>
