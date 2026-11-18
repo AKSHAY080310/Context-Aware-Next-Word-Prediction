@@ -1,156 +1,154 @@
+
 const textInput = document.getElementById("textInput");
 const suggestionList = document.getElementById("suggestionList");
 const predictionStatus = document.getElementById("predictionStatus");
-
 const wordCount = document.getElementById("wordCount");
 const contextCount = document.getElementById("contextCount");
 const tokenDisplay = document.getElementById("tokenDisplay");
-
 const clearButton = document.getElementById("clearButton");
 const topKSelect = document.getElementById("topKSelect");
+const modelSelect = document.getElementById("modelSelect");
+const modelAvailability = document.getElementById("modelAvailability");
+const modelNote = document.getElementById("modelNote");
+
+const MODEL_LABELS = {
+    lstm: "Custom LSTM",
+    transformer: "Custom Transformer V2",
+    gpt2: "GPT-2",
+    distilgpt2: "DistilGPT-2"
+};
 
 let debounceTimer = null;
 let latestRequestId = 0;
 
 
-function updateWordCount() {
-
-    const text = textInput.value.trim();
-
-    const words = text
-        ? text.split(/\s+/).length
-        : 0;
-
-    wordCount.textContent = `${words} words`;
-}
-
-
-function showLoading() {
-
-    suggestionList.innerHTML = `
-        <div class="empty-state">
-            Generating predictions...
-        </div>
-    `;
-
-    predictionStatus.textContent = "Processing your context...";
-}
-
-
-function showError(message) {
-
-    suggestionList.innerHTML = `
-        <div class="empty-state error-state">
-            ${escapeHTML(message)}
-        </div>
-    `;
-
-    predictionStatus.textContent = "Prediction failed.";
-}
-
-
 function escapeHTML(value) {
 
-    return String(value).replace(/[&<>"']/g, function (character) {
-        const replacements = {
+    return String(value).replace(
+        /[&<>"']/g,
+        c => ({
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#039;"
-        };
+        })[c]
+    );
+}
 
-        return replacements[character];
-    });
+
+function updateWordCount() {
+
+    const value = textInput.value.trim();
+
+    wordCount.textContent =
+        `${value ? value.split(/\s+/).length : 0} words`;
+}
+
+
+function showLoading() {
+
+    suggestionList.innerHTML =
+        '<div class="empty-state">Generating predictions...</div>';
+
+    predictionStatus.textContent =
+        `Processing with ${MODEL_LABELS[modelSelect.value]}...`;
+}
+
+
+function showError(message) {
+
+    suggestionList.innerHTML =
+        `<div class="empty-state error-state">${escapeHTML(message)}</div>`;
+
+    predictionStatus.textContent = "Prediction failed.";
 }
 
 
 function renderPredictions(data) {
 
-    const predictions = data.predictions || [];
+    suggestionList.innerHTML = "";
 
-    if (predictions.length === 0) {
+    if (!data.predictions || !data.predictions.length) {
 
-        suggestionList.innerHTML = `
-            <div class="empty-state">
-                No valid word suggestions were returned.
-            </div>
-        `;
+        suggestionList.innerHTML =
+            '<div class="empty-state">No suggestions were returned.</div>';
 
         return;
     }
 
-    suggestionList.innerHTML = "";
+    data.predictions.forEach((prediction, index) => {
 
-    predictions.forEach((prediction, index) => {
+        const button = document.createElement("button");
 
-        const item = document.createElement("button");
+        button.type = "button";
+        button.className = "suggestion-item";
 
-        item.type = "button";
-        item.className = "suggestion-item";
-
-        item.innerHTML = `
+        button.innerHTML = `
             <span class="suggestion-rank">${index + 1}</span>
-
-            <span class="suggestion-word">
-                ${escapeHTML(prediction.word)}
-            </span>
-
+            <span class="suggestion-word">${escapeHTML(prediction.word)}</span>
             <span class="suggestion-probability">
                 ${Number(prediction.percentage).toFixed(2)}%
             </span>
         `;
 
-        item.addEventListener("click", function () {
+        button.addEventListener("click", () => {
             acceptSuggestion(prediction.word);
         });
 
-        suggestionList.appendChild(item);
-
+        suggestionList.appendChild(button);
     });
-
 }
 
 
-function updateTokenDisplay(tokens) {
+function updateTokenDisplay(tokens, data) {
 
     tokenDisplay.innerHTML = "";
 
-    if (!tokens || tokens.length === 0) {
+    if (!tokens || !tokens.length) {
+
         tokenDisplay.textContent = "No tokens yet.";
-        contextCount.textContent = "Context: 0 / 10 tokens";
+
+        contextCount.textContent = "Context: 0 tokens";
+
         return;
     }
 
-    const actualTokens = tokens.slice(-10);
+    tokens.slice(-16).forEach(token => {
 
-    actualTokens.forEach(token => {
+        const chip = document.createElement("span");
 
-        const span = document.createElement("span");
+        chip.className = "token-chip";
+        chip.textContent = token;
 
-        span.className = "token-chip";
-        span.textContent = token;
-
-        tokenDisplay.appendChild(span);
-
+        tokenDisplay.appendChild(chip);
     });
 
     contextCount.textContent =
-        `Context: ${actualTokens.length} / 10 tokens`;
+        `Context: ${tokens.length} tokens`;
+
+    document.getElementById("contextWindow").textContent =
+        data.context_size
+            ? `${data.context_size} tokens`
+            : `${tokens.length} tokens`;
 }
 
 
-function acceptSuggestion(word) {
+function acceptSuggestion(token) {
 
-    const currentText = textInput.value;
+    const current = textInput.value;
 
-    const separator =
-        currentText.length > 0 &&
-        !/\s$/.test(currentText)
-            ? " "
-            : "";
+    const isHF = [
+        "gpt2",
+        "distilgpt2"
+    ].includes(modelSelect.value);
 
-    textInput.value = currentText + separator + word + " ";
+    // GPT-family decoded tokens can include leading whitespace.
+    // Preserve that whitespace when inserting a suggestion.
+
+    textInput.value = isHF
+        ? current + token
+        : current + (/\s$/.test(current) ? "" : " ") + token + " ";
 
     updateWordCount();
 
@@ -168,15 +166,14 @@ async function requestPrediction() {
 
     if (!text) {
 
-        suggestionList.innerHTML = `
-            <div class="empty-state">
-                Start typing to receive predictions.
-            </div>
-        `;
+        suggestionList.innerHTML =
+            '<div class="empty-state">Start typing to receive predictions.</div>';
 
         predictionStatus.textContent = "Waiting for input.";
 
-        updateTokenDisplay([]);
+        tokenDisplay.textContent = "No tokens yet.";
+
+        contextCount.textContent = "Context: 0 tokens";
 
         return;
     }
@@ -189,17 +186,36 @@ async function requestPrediction() {
 
         const data = await getPrediction(
             text,
+            modelSelect.value,
             Number(topKSelect.value)
         );
 
-        // Ignore older responses if the user has typed more text.
         if (requestId !== latestRequestId) {
             return;
         }
 
         renderPredictions(data);
 
-        updateTokenDisplay(data.context_tokens);
+        updateTokenDisplay(
+            data.context_tokens,
+            data
+        );
+
+        document.getElementById("activeModel").textContent =
+            data.model;
+
+        document.getElementById("modelDescription").textContent =
+            data.prediction_unit === "token"
+                ? "Pretrained causal language model"
+                : "Custom-trained next-word model";
+
+        document.getElementById("suggestionTitle").textContent =
+            data.prediction_unit === "token"
+                ? "Next-token suggestions"
+                : "Next-word suggestions";
+
+        modelNote.textContent =
+            data.note || "Custom vocabulary-based word prediction.";
 
         predictionStatus.textContent =
             `Prediction completed using ${data.model}.`;
@@ -211,9 +227,7 @@ async function requestPrediction() {
         }
 
         showError(error.message);
-
     }
-
 }
 
 
@@ -221,64 +235,111 @@ function schedulePrediction() {
 
     clearTimeout(debounceTimer);
 
-    debounceTimer = setTimeout(() => {
-        requestPrediction();
-    }, 500);
-
+    debounceTimer = setTimeout(
+        requestPrediction,
+        550
+    );
 }
 
 
-textInput.addEventListener("input", schedulePrediction);
+// Automatically predict while the user types.
+
+textInput.addEventListener(
+    "input",
+    schedulePrediction
+);
 
 
-topKSelect.addEventListener("change", function () {
+// Update the number of suggestions.
 
-    if (textInput.value.trim()) {
-        requestPrediction();
+topKSelect.addEventListener(
+    "change",
+    () => {
+        if (textInput.value.trim()) {
+            requestPrediction();
+        }
     }
+);
 
-});
+
+// Change the selected model.
+
+modelSelect.addEventListener(
+    "change",
+    () => {
+
+        document.getElementById("activeModel").textContent =
+            MODEL_LABELS[modelSelect.value];
+
+        document.getElementById("contextWindow").textContent =
+            modelSelect.value === "lstm"
+                ? "10 tokens"
+                : modelSelect.value === "transformer"
+                    ? "32 tokens"
+                    : "Up to 1024 tokens";
+
+        if (textInput.value.trim()) {
+            requestPrediction();
+        }
+    }
+);
 
 
-clearButton.addEventListener("click", function () {
+// Clear the editor.
 
-    textInput.value = "";
+clearButton.addEventListener(
+    "click",
+    () => {
 
-    updateWordCount();
-    updateTokenDisplay([]);
+        textInput.value = "";
 
-    suggestionList.innerHTML = `
-        <div class="empty-state">
-            Start typing to receive predictions.
-        </div>
-    `;
+        updateWordCount();
 
-    predictionStatus.textContent = "Waiting for input.";
+        updateTokenDisplay([]);
 
-    textInput.focus();
+        suggestionList.innerHTML =
+            '<div class="empty-state">Start typing to receive predictions.</div>';
 
-});
+        predictionStatus.textContent = "Waiting for input.";
 
+        textInput.focus();
+    }
+);
+
+
+// Check whether the backend is running.
 
 checkBackendHealth()
     .then(data => {
 
-        if (!data.model_files_available) {
+        const entries = Object.entries(
+            data.models || {}
+        );
+
+        modelAvailability.textContent = entries
+            .map(([key, info]) => {
+                return `${info.label}: ${
+                    info.available ? "files present" : "files missing"
+                }${info.loaded ? " (loaded)" : ""}`;
+            })
+            .join(" | ");
+
+        if (!data.models?.lstm?.available) {
 
             predictionStatus.textContent =
-                "Model files are missing. Check backend/models.";
+                "LSTM files missing. Check backend/models.";
 
         } else {
 
             predictionStatus.textContent =
-                "Backend is connected. Start typing.";
-
+                "Backend connected. Choose a model and start typing.";
         }
-
     })
     .catch(() => {
 
+        modelAvailability.textContent =
+            "Backend unavailable.";
+
         predictionStatus.textContent =
             "Cannot connect to the backend.";
-
     });

@@ -1,144 +1,201 @@
-import pickle
-from pathlib import Path
+
+from __future__ import annotations
 
 import numpy as np
-import nltk
-from tensorflow.keras.models import load_model
+from nltk.tokenize import word_tokenize
 
-from backend.utils.preprocessing import prepare_input
+from backend.services.model_manager import (
+    MODEL_CONFIG,
+    model_manager
+)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-MODEL_DIR = BASE_DIR / "models"
-
-MODEL_PATH = MODEL_DIR / "lstm_model.keras"
-WORD_TO_ID_PATH = MODEL_DIR / "word_to_id.pkl"
-ID_TO_WORD_PATH = MODEL_DIR / "id_to_word.pkl"
-
-CONTEXT_SIZE = 10
 DEFAULT_TOP_K = 5
 MAX_TOP_K = 10
 
-class PredictionService:
 
-    def __init__(self):
-        self.model = None
-        self.word_to_id = None
-        self.id_to_word = None
+def _custom_prediction(model_key: str, text: str, top_k: int):
 
-    def load_resources(self):
-        """
-        Load model and vocabulary only once.
-        """
+    cfg = MODEL_CONFIG[model_key]
 
-        if self.model is not None:
-            return
+    resources = model_manager.get(model_key)
 
-        required_files = [
-            MODEL_PATH,
-            WORD_TO_ID_PATH,
-            ID_TO_WORD_PATH
-        ]
+    tokens = word_tokenize(text)
 
-        for file_path in required_files:
-            if not file_path.exists():
-                raise FileNotFoundError(
-                    f"Required file not found: {file_path}"
-                )
+    if not tokens:
+        raise ValueError("Please enter some text.")
 
-        # Ensure the NLTK tokenizer data is available.
-        try:
-            nltk.data.find("tokenizers/punkt_tab")
-        except LookupError:
-            nltk.download("punkt_tab", quiet=True)
+    word_to_id = resources["word_to_id"]
+    id_to_word = resources["id_to_word"]
 
-        try:
-            nltk.data.find("tokenizers/punkt")
-        except LookupError:
-            nltk.download("punkt", quiet=True)
+    unk_id = word_to_id.get("<UNK>", 1)
+    pad_id = word_to_id.get("<PAD>", 0)
 
-        print("Loading LSTM model...")
+    token_ids = [
+        word_to_id.get(token, unk_id)
+        for token in tokens
+    ]
 
-        self.model = load_model(
-            str(MODEL_PATH),
-            compile=False
+    token_ids = token_ids[-cfg["context_size"]:]
+
+    token_ids = (
+        [pad_id] * (cfg["context_size"] - len(token_ids))
+        + token_ids
+    )
+
+    probabilities = resources["model"].predict(
+        np.asarray([token_ids], dtype=np.int32),
+        verbose=0
+    )[0]
+
+    ranked = np.argsort(probabilities)[::-1]
+
+    predictions = []
+
+    for idx in ranked:
+
+        word = id_to_word.get(int(idx), "<UNK>")
+
+        if word in ("<PAD>", "<UNK>"):
+            continue
+
+        prob = float(probabilities[idx])
+
+        predictions.append({
+            "word": word,
+            "probability": prob,
+            "percentage": round(prob * 100, 2),
+            "unit": "word",
+        })
+
+        if len(predictions) >= top_k:
+            break
+
+    return {
+        "input_text": text,
+        "tokens": tokens,
+        "context_tokens": [
+            id_to_word.get(int(i), "<UNK>")
+            for i in token_ids
+            if int(i) != pad_id
+        ],
+        "predictions": predictions,
+        "model": cfg["label"],
+        "context_size": cfg["context_size"],
+        "prediction_unit": "word",
+    }
+
+
+def _huggingface_prediction(
+    model_key: str,
+    text: str,
+    top_k: int
+):
+
+    resources = model_manager.get(model_key)
+
+    tokenizer = resources["tokenizer"]
+    torch = resources["torch"]
+    device = resources["device"]
+
+    encoded = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=1024
+    )
+
+    encoded = {
+        key: value.to(device)
+        for key, value in encoded.items()
+    }
+
+    if encoded["input_ids"].shape[1] == 0:
+        raise ValueError("Please enter some text.")
+
+    with torch.no_grad():
+
+        logits = resources["model"](
+            **encoded
+        ).logits[0, -1]
+
+        probs = torch.softmax(logits, dim=-1)
+
+        values, indices = torch.topk(
+            probs,
+            k=top_k
         )
 
-        print("Loading vocabulary...")
+    predictions = []
 
-        with open(WORD_TO_ID_PATH, "rb") as file:
-            self.word_to_id = pickle.load(file)
+    for value, index in zip(
+        values.tolist(),
+        indices.tolist()
+    ):
 
-        with open(ID_TO_WORD_PATH, "rb") as file:
-            self.id_to_word = pickle.load(file)
+        token_text = tokenizer.decode(
+            [index],
+            clean_up_tokenization_spaces=False
+        )
 
-        print("LSTM model and vocabulary loaded successfully.")
+        display = token_text.replace("\n", "\\n")
 
-    def predict(self, text, top_k=DEFAULT_TOP_K):
+        predictions.append({
+            "word": display,
+            "probability": float(value),
+            "percentage": round(float(value) * 100, 2),
+            "unit": "token",
+        })
 
-        self.load_resources()
+    input_tokens = tokenizer.convert_ids_to_tokens(
+        encoded["input_ids"][0].tolist()
+    )
 
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("Text cannot be empty.")
+    return {
+        "input_text": text,
+        "tokens": input_tokens,
+        "context_tokens": input_tokens[-12:],
+        "predictions": predictions,
+        "model": MODEL_CONFIG[model_key]["label"],
+        "context_size": len(input_tokens),
+        "prediction_unit": "token",
+        "note": (
+            "GPT-family models predict subword tokens, "
+            "not necessarily complete words."
+        ),
+    }
 
-        if not isinstance(top_k, int) or not 1 <= top_k <= MAX_TOP_K:
-            raise ValueError(
-                f"top_k must be an integer between 1 and {MAX_TOP_K}."
-            )
 
-        # Prepare input.
-        input_ids, tokens = prepare_input(
+def predict(
+    text: str,
+    model_key: str = "lstm",
+    top_k: int = DEFAULT_TOP_K
+):
+
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Please provide some text.")
+
+    if (
+        isinstance(top_k, bool)
+        or not isinstance(top_k, int)
+        or not 1 <= top_k <= MAX_TOP_K
+    ):
+        raise ValueError(
+            f"top_k must be an integer between 1 and {MAX_TOP_K}."
+        )
+
+    if model_key not in MODEL_CONFIG:
+        raise ValueError("Invalid model selection.")
+
+    if MODEL_CONFIG[model_key]["kind"] == "keras":
+
+        return _custom_prediction(
+            model_key,
             text,
-            self.word_to_id,
-            CONTEXT_SIZE
+            top_k
         )
 
-        X = np.array([input_ids], dtype=np.int32)
-
-        # Run the LSTM.
-        probabilities = self.model.predict(
-            X,
-            verbose=0
-        )[0]
-
-        # Find the highest-probability words.
-        ranked_indices = np.argsort(probabilities)[::-1]
-
-        predictions = []
-
-        for index in ranked_indices:
-
-            word = self.id_to_word.get(
-                int(index),
-                "<UNK>"
-            )
-
-            # Avoid suggesting padding and unknown tokens.
-            if word in ("<PAD>", "<UNK>"):
-                continue
-
-            predictions.append({
-                "word": word,
-                "probability": float(probabilities[index]),
-                "percentage": round(
-                    float(probabilities[index]) * 100,
-                    2
-                )
-            })
-
-            if len(predictions) == top_k:
-                break
-
-        return {
-            "input_text": text,
-            "tokens": tokens,
-            "context_tokens": [
-                self.id_to_word.get(token_id, "<UNK>")
-                for token_id in input_ids
-            ],
-            "predictions": predictions,
-            "model": "LSTM V3",
-            "context_size": CONTEXT_SIZE
-        }
-
-# Shared service instance.
-prediction_service = PredictionService()
+    return _huggingface_prediction(
+        model_key,
+        text,
+        top_k
+    )
