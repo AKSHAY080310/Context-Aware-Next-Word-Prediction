@@ -143,8 +143,7 @@ function acceptSuggestion(token) {
         "distilgpt2"
     ].includes(modelSelect.value);
 
-    // GPT-family decoded tokens can include leading whitespace.
-    // Preserve that whitespace when inserting a suggestion.
+    // Preserve leading whitespace in GPT-family tokens.
 
     textInput.value = isHF
         ? current + token
@@ -161,6 +160,7 @@ function acceptSuggestion(token) {
 async function requestPrediction() {
 
     const text = textInput.value.trim();
+    const requestId = ++latestRequestId;
 
     updateWordCount();
 
@@ -177,8 +177,6 @@ async function requestPrediction() {
 
         return;
     }
-
-    const requestId = ++latestRequestId;
 
     showLoading();
 
@@ -234,6 +232,7 @@ async function requestPrediction() {
 function schedulePrediction() {
 
     clearTimeout(debounceTimer);
+    ++latestRequestId;
 
     debounceTimer = setTimeout(
         requestPrediction,
@@ -291,11 +290,13 @@ clearButton.addEventListener(
     "click",
     () => {
 
+        clearTimeout(debounceTimer);
+        ++latestRequestId;
         textInput.value = "";
 
         updateWordCount();
 
-        updateTokenDisplay([]);
+        updateTokenDisplay([], {});
 
         suggestionList.innerHTML =
             '<div class="empty-state">Start typing to receive predictions.</div>';
@@ -343,3 +344,19 @@ checkBackendHealth()
         predictionStatus.textContent =
             "Cannot connect to the backend.";
     });
+
+
+// Preselect model when opened from /workspace/<model_key>.
+
+const modelFromPath = window.location.pathname.match(
+    /^\/workspace\/(lstm|transformer|gpt2|distilgpt2)$/
+);
+
+if (modelFromPath) {
+
+    modelSelect.value = modelFromPath[1];
+
+    modelSelect.dispatchEvent(
+        new Event("change")
+    );
+}

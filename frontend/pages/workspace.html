@@ -1,11 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <title>Writing Workspace | ContextAI</title>
+    <title>Choose Model | ContextAI</title>
 
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -20,152 +22,123 @@
 
         <div class="nav-links">
             <a href="/">Home</a>
-            <a href="/workspace" class="active-link">Workspace</a>
+            <a href="/workspace" class="active-link">
+                Workspace
+            </a>
             <a href="/comparison">Model Lab</a>
             <a href="/explanation">How It Works</a>
         </div>
 
         <span class="model-indicator">
-            LSTM V3
+            4 MODEL OPTIONS
         </span>
 
     </nav>
 
+    <main class="content-container">
 
-    <main class="workspace-container">
+        <span class="eyebrow">
+            WRITING ENVIRONMENT
+        </span>
 
-        <div class="workspace-heading">
+        <h1>Choose your model</h1>
 
-            <div>
-                <span class="eyebrow">WRITING ENVIRONMENT</span>
-                <h1>Writing Workspace</h1>
+        <p class="page-description">
+            Select a language model to open the
+            next-word prediction workspace.
+        </p>
+
+        <div class="model-choice-grid">
+
+            <a class="model-choice-card"
+               href="/workspace/lstm">
+
+                <span class="eyebrow">
+                    RECURRENT NETWORK
+                </span>
+
+                <h2>LSTM V3</h2>
 
                 <p>
-                    Type your text and explore the words predicted
-                    by the model based on the latest context.
+                    Custom word-level LSTM with
+                    a 10-word context window.
                 </p>
-            </div>
 
-            <div class="model-status">
-                <span class="status-dot">●</span>
-                LSTM MODEL
-            </div>
+                <span class="model-choice-action">
+                    Open prediction workspace →
+                </span>
+
+            </a>
+
+            <a class="model-choice-card"
+               href="/workspace/transformer">
+
+                <span class="eyebrow">
+                    SELF-ATTENTION
+                </span>
+
+                <h2>Transformer V2</h2>
+
+                <p>
+                    Custom word-level Transformer
+                    with a 32-word context window.
+                </p>
+
+                <span class="model-choice-action">
+                    Open prediction workspace →
+                </span>
+
+            </a>
+
+            <a class="model-choice-card"
+               href="/workspace/gpt2">
+
+                <span class="eyebrow">
+                    PRETRAINED LANGUAGE MODEL
+                </span>
+
+                <h2>GPT-2</h2>
+
+                <p>
+                    Hugging Face causal language model
+                    using subword tokens.
+                </p>
+
+                <span class="model-choice-action">
+                    Open prediction workspace →
+                </span>
+
+            </a>
+
+            <a class="model-choice-card"
+               href="/workspace/distilgpt2">
+
+                <span class="eyebrow">
+                    COMPACT LANGUAGE MODEL
+                </span>
+
+                <h2>DistilGPT-2</h2>
+
+                <p>
+                    Smaller GPT-2 family model
+                    using subword tokens.
+                </p>
+
+                <span class="model-choice-action">
+                    Open prediction workspace →
+                </span>
+
+            </a>
 
         </div>
 
-
-        <div class="workspace-grid">
-
-            <section class="editor-panel">
-
-                <div class="panel-header">
-                    <div>
-                        <h2>Your writing</h2>
-                        <p>Enter text below to generate suggestions.</p>
-                    </div>
-
-                    <button id="clearButton" class="text-button">
-                        Clear
-                    </button>
-                </div>
-
-
-                <textarea
-                    id="textInput"
-                    placeholder="Start writing here... For example: The future of artificial intelligence"
-                    spellcheck="false"
-                ></textarea>
-
-
-                <div class="editor-footer">
-                    <span id="wordCount">0 words</span>
-
-                    <span id="contextCount">
-                        Context: 0 / 10 tokens
-                    </span>
-                </div>
-
-
-                <div class="suggestion-heading">
-                    <h3>Next-word suggestions</h3>
-
-                    <select id="topKSelect">
-                        <option value="3">Top 3</option>
-                        <option value="5" selected>Top 5</option>
-                        <option value="10">Top 10</option>
-                    </select>
-                </div>
-
-
-                <div id="suggestionList" class="suggestion-list">
-
-                    <div class="empty-state">
-                        Start typing to receive predictions.
-                    </div>
-
-                </div>
-
-
-                <p id="predictionStatus" class="prediction-status">
-                    Waiting for input.
-                </p>
-
-            </section>
-
-
-            <aside class="insight-panel">
-
-                <div class="panel-header">
-                    <div>
-                        <h2>Model Insights</h2>
-                        <p>Information about the current prediction.</p>
-                    </div>
-                </div>
-
-
-                <div class="insight-card">
-                    <span class="insight-label">ACTIVE MODEL</span>
-                    <h3>LSTM V3</h3>
-                    <p>Long Short-Term Memory Network</p>
-                </div>
-
-
-                <div class="insight-card">
-                    <span class="insight-label">CONTEXT WINDOW</span>
-                    <h3>10 tokens</h3>
-                    <p>Maximum number of recent tokens used.</p>
-                </div>
-
-
-                <div class="insight-card">
-                    <span class="insight-label">TOKENIZED CONTEXT</span>
-
-                    <div id="tokenDisplay" class="token-display">
-                        No tokens yet.
-                    </div>
-                </div>
-
-
-                <div class="insight-card">
-                    <span class="insight-label">PREDICTION EXPLANATION</span>
-
-                    <p>
-                        The model converts your recent tokens into
-                        vocabulary IDs, processes them through the
-                        LSTM and produces a probability distribution
-                        over possible next words.
-                    </p>
-                </div>
-
-            </aside>
-
-        </div>
+        <p class="table-note">
+            Custom model weights must be present in
+            backend/models. Hugging Face models
+            download on first use.
+        </p>
 
     </main>
-
-
-    <script src="/js/api.js"></script>
-    <script src="/js/workspace.js"></script>
 
 </body>
 </html>

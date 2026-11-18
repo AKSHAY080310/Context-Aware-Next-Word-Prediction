@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Model Lab | ContextAI</title>
 
@@ -21,56 +23,96 @@
         <div class="nav-links">
             <a href="/">Home</a>
             <a href="/workspace">Workspace</a>
-            <a href="/comparison" class="active-link">Model Lab</a>
+            <a href="/comparison" class="active-link">
+                Model Lab
+            </a>
             <a href="/explanation">How It Works</a>
         </div>
 
-        <span class="model-indicator">LSTM V3</span>
+        <span class="model-indicator">
+            4 MODEL OPTIONS
+        </span>
 
     </nav>
 
-
     <main class="content-container">
 
-        <span class="eyebrow">EXPERIMENT ANALYSIS</span>
+        <span class="eyebrow">
+            EXPERIMENT ANALYSIS
+        </span>
 
         <h1>Model Laboratory</h1>
 
         <p class="page-description">
-            Evaluate the performance of the LSTM experiments.
-            Transformer results will be added after its implementation
-            and evaluation on the same test dataset.
+            Compare the reported evaluation results
+            of LSTM V3 and Transformer V2.
+            GPT-2 and DistilGPT-2 results will appear
+            after evaluation.
         </p>
 
+        <div class="model-controls">
+
+            <label for="metricModelSelect">
+                Summary model
+            </label>
+
+            <select id="metricModelSelect">
+
+                <option value="lstm">
+                    LSTM V3
+                </option>
+
+                <option value="transformer" selected>
+                    Transformer V2
+                </option>
+
+                <option value="gpt2">
+                    GPT-2
+                </option>
+
+                <option value="distilgpt2">
+                    DistilGPT-2
+                </option>
+
+            </select>
+
+        </div>
 
         <section class="metrics-grid">
 
             <div class="metric-card">
                 <span>TEST LOSS</span>
-                <h2>6.3537</h2>
-                <p>LSTM V3</p>
+                <h2 id="metricLoss">—</h2>
+                <p class="selected-model-name">
+                    Transformer V2
+                </p>
             </div>
 
             <div class="metric-card">
                 <span>TOP-1 ACCURACY</span>
-                <h2>19.55%</h2>
-                <p>LSTM V3</p>
+                <h2 id="metricTop1">—</h2>
+                <p class="selected-model-name">
+                    Transformer V2
+                </p>
             </div>
 
             <div class="metric-card">
                 <span>TOP-5 ACCURACY</span>
-                <h2>36.19%</h2>
-                <p>LSTM V3</p>
+                <h2 id="metricTop5">—</h2>
+                <p class="selected-model-name">
+                    Transformer V2
+                </p>
             </div>
 
             <div class="metric-card">
                 <span>TOP-10 ACCURACY</span>
-                <h2>42.68%</h2>
-                <p>LSTM V3</p>
+                <h2 id="metricTop10">—</h2>
+                <p class="selected-model-name">
+                    Transformer V2
+                </p>
             </div>
 
         </section>
-
 
         <section class="table-section">
 
@@ -90,51 +132,23 @@
                         </tr>
                     </thead>
 
-                    <tbody>
-
-                        <tr>
-                            <td>LSTM V1</td>
-                            <td>6.3380</td>
-                            <td>19.52%</td>
-                            <td>36.32%</td>
-                            <td>42.86%</td>
-                        </tr>
-
-                        <tr>
-                            <td>LSTM V2</td>
-                            <td>6.4173</td>
-                            <td>19.03%</td>
-                            <td>35.47%</td>
-                            <td>42.05%</td>
-                        </tr>
-
-                        <tr class="highlight-row">
-                            <td>LSTM V3</td>
-                            <td>6.3537</td>
-                            <td>19.55%</td>
-                            <td>36.19%</td>
-                            <td>42.68%</td>
-                        </tr>
-
-                        <tr>
-                            <td>Transformer</td>
-                            <td colspan="4">Not evaluated yet</td>
-                        </tr>
-
+                    <tbody id="comparisonBody">
                     </tbody>
 
                 </table>
 
             </div>
 
-            <p class="table-note">
-                All reported results are from the existing LSTM
-                experiments. The Transformer row will be populated
-                only after a comparable test evaluation.
+           <p class="table-note">
+                Evaluation results for LSTM V3, Transformer V2,
+                GPT-2 and DistilGPT-2. GPT-family metrics use
+                first-continuation-token evaluation, whereas
+                the custom models use word-level predictions.
+                These results are not strictly comparable
+                until evaluated using a common protocol.
             </p>
 
         </section>
-
 
         <section class="info-section">
 
@@ -145,17 +159,16 @@
                 <div>
                     <h3>Top-1 Accuracy</h3>
                     <p>
-                        Percentage of test examples where the
-                        highest-probability predicted word exactly
-                        matches the actual next word.
+                        Correct next word is the
+                        highest-ranked prediction.
                     </p>
                 </div>
 
                 <div>
                     <h3>Top-5 Accuracy</h3>
                     <p>
-                        Percentage of test examples where the actual
-                        next word appears among the five highest-ranked
+                        Correct next word appears
+                        among the five highest-ranked
                         predictions.
                     </p>
                 </div>
@@ -163,8 +176,8 @@
                 <div>
                     <h3>Top-10 Accuracy</h3>
                     <p>
-                        Percentage of test examples where the actual
-                        next word appears among the ten highest-ranked
+                        Correct next word appears
+                        among the ten highest-ranked
                         predictions.
                     </p>
                 </div>
@@ -172,8 +185,10 @@
                 <div>
                     <h3>Test Loss</h3>
                     <p>
-                        Measures how well the model assigns probability
-                        to the actual next word. Lower is generally better.
+                        Average prediction loss;
+                        lower is generally better.
+                        Compare values only when
+                        evaluation methods are aligned.
                     </p>
                 </div>
 
@@ -183,10 +198,11 @@
 
     </main>
 
-
     <footer>
         ContextAI · Model Laboratory
     </footer>
+
+    <script src="/js/model_comparison.js"></script>
 
 </body>
 </html>
